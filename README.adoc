@@ -1,5 +1,5 @@
 = Spring Security Policy
-// See A Hypothetical CVE Report for a description of the attributes below
+// See A Hypothetical CVE Report for attributes; Collaboration Setup writes {ghsa-remote-name}-setup.sh under {base-clone-dir}.
 :ghsa-name-with-owner: spring-projects/security-advisories-ghsa-3rf2-292v-g6wr
 :ghsa-remote-name: ghsa-path-validation
 :base-clone-dir: $HOME/code/spring-projects/security-advisories
@@ -20,6 +20,7 @@ Collaboration should use a https://docs.github.com/en/code-security/security-adv
 This section outlines how to collaborate on a security advisory and is divided into the following subsections:
 
 * <<hypothetical-cve-report,A Hypothetical CVE Report>>
+* <<collaboration-setup,Collaboration Setup>>
 * <<sharing-sample,Sharing the sample>>
 * <<using-sample,Using the sample>>
 * <<producing-fix,Producing a fix>>
@@ -31,9 +32,14 @@ This section outlines how to collaborate on a security advisory and is divided i
 Throughout this documentation, we will use an example report related to a hypothetical **CVE in Spring Framework related to path validation**.
 For the example report we will assume that the CVE is in https://github.com/{public-name-with-owner} and the branch of `{target-branch}`.
 
-There are example scripts in each section that define shell variables.
-The table below lists each variable and what it is for.
+[[collaboration-setup]]
+=== Collaboration Setup
 
+Before you start, you need to set up the environment for <<collaborating-with-code,Collaborating with code>>.
+To do this, you will need to create a setup script that will be used to set up the environment for the rest of the steps.
+The <<setup-shell-variables,shell variable table>> lists each variable and what it is for.
+
+[[setup-shell-variables]]
 [cols="1,2",options="header"]
 |===
 |Shell variable |Role
@@ -51,12 +57,63 @@ The table below lists each variable and what it is for.
 |`PUBLIC_REPO_REMOTE_NAME` |The remote name used for the public repository (e.g. `{public-repo-remote-name}`).
 
 |`TARGET_BRANCH` |Branch name with the CVE in it (e.g. `{target-branch}`).
+
+|`GHSA_SETUP_SCRIPT` |Absolute path to the generated setup script (e.g. `{base-clone-dir}/{ghsa-remote-name}-setup.sh`). Later steps `source` this file to load the exports.
 |===
 
 [NOTE]
 ====
 If you want to update the instructions throughout this documentation, you can update the corresponding https://docs.asciidoctor.org/asciidoc/latest/attributes/document-attributes/[AsciiDoc document attribute] (`:name: value`) at the top of this README and re-render the README to see the changes.
+After you change defaults, run <<collaboration-setup,Collaboration Setup>> again so `{base-clone-dir}/{ghsa-remote-name}-setup.sh` is regenerated.
 ====
+
+The script below will create the variables used throughout the rest of the documentation.
+Before running the script, update it below according to <<setup-shell-variables,the shell variables>> descriptions.
+
+[source,shell,subs=+attributes]
+----
+# Advisory walkthrough defaults — re-create from README Setup when attributes change.
+GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
+GHSA_REMOTE_NAME='{ghsa-remote-name}'
+BASE_CLONE_DIR='{base-clone-dir}'
+##
+# Only needed for the reporter sharing the sample
+CVE_SAMPLE_DIR='{cve-sample-dir}'
+##
+# Only needed for the team member fixing
+PUBLIC_NAME_WITH_OWNER='{public-name-with-owner}'
+PUBLIC_REPO_REMOTE_NAME='{public-repo-remote-name}'
+TARGET_BRANCH='{target-branch}'
+
+#######
+# Unlikely to need editing below this line
+#######
+GHSA_SETUP_SCRIPT="${BASE_CLONE_DIR}/${GHSA_REMOTE_NAME}-setup.sh"
+mkdir -p "$BASE_CLONE_DIR"
+cat > "$GHSA_SETUP_SCRIPT" <<ENDADVISORYSETUP
+#!/usr/bin/env bash
+# Advisory walkthrough defaults — re-create from README Setup when attributes change.
+export GHSA_NAME_WITH_OWNER="$\{GHSA_NAME_WITH_OWNER}"
+export GHSA_REMOTE_NAME="$\{GHSA_REMOTE_NAME}"
+export BASE_CLONE_DIR="$\{BASE_CLONE_DIR}"
+##
+# Only needed for the reporter sharing the sample
+export CVE_SAMPLE_DIR="$\{CVE_SAMPLE_DIR}"
+##
+# Only needed for the team member fixing
+export PUBLIC_NAME_WITH_OWNER="$\{PUBLIC_NAME_WITH_OWNER}"
+export PUBLIC_REPO_REMOTE_NAME="$\{PUBLIC_REPO_REMOTE_NAME}"
+export TARGET_BRANCH="$\{TARGET_BRANCH}"
+
+#######
+# Unlikely to need editing below this line
+#######
+export GHSA_REMOTE_URL="git@github.com:$\{GHSA_NAME_WITH_OWNER}.git"
+export GHSA_SETUP_SCRIPT="$\{GHSA_SETUP_SCRIPT}"
+ENDADVISORYSETUP
+chmod +x "$GHSA_SETUP_SCRIPT"
+source "$GHSA_SETUP_SCRIPT"
+----
 
 [[sharing-sample]]
 === Sharing the sample
@@ -70,7 +127,7 @@ The steps are:
 . <<sharing-sample-commit,Committing the sample branch>>
 . <<sharing-sample-push,Pushing the sample branch>>
 
-Review each block before you run it, align the defaults in <<hypothetical-cve-report,A Hypothetical CVE Report>> with your environment.
+Review each block before you run it, align the defaults in <<hypothetical-cve-report,A Hypothetical CVE Report>> with your environment, and complete <<collaboration-setup,Collaboration Setup>> once so the setup script exists.
 
 [[sharing-sample-create-branch]]
 ==== Creating the sample branch
@@ -80,11 +137,9 @@ This section creates an https://git-scm.com/docs/gitglossary#Documentation/gitgl
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-GHSA_REMOTE_URL="git@github.com:${GHSA_NAME_WITH_OWNER}.git"
-BASE_CLONE_DIR="{base-clone-dir}"
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
 
 #########
 # Creating the sample branch
@@ -111,10 +166,9 @@ Copy the sample directory to the `sample` branch and commit the changes.
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-BASE_CLONE_DIR="{base-clone-dir}"
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-CVE_SAMPLE_DIR="{cve-sample-dir}"
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
 # cd "{base-clone-dir}/{ghsa-remote-name}"
 cd "$BASE_CLONE_DIR/$GHSA_REMOTE_NAME"
 git switch sample
@@ -136,10 +190,9 @@ Push branch `sample` to the advisory remote and print the GitHub URL for reviewe
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-BASE_CLONE_DIR="{base-clone-dir}"
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
 # cd "{base-clone-dir}/{ghsa-remote-name}"
 cd "$BASE_CLONE_DIR/$GHSA_REMOTE_NAME"
 git switch sample
@@ -161,16 +214,14 @@ As a *team member*, using the sample means checking out branch `sample` from the
 You need access to that fork (for example as a collaborator on the draft advisory).
 
 The script below is *an example* of how you can do that with Git: clone the fork and switch to branch `sample`.
-Review it carefully before you run it, and use the same defaults as <<sharing-sample,Sharing the sample>> when you share the reporter's layout (see <<hypothetical-cve-report,A Hypothetical CVE Report>>).
+Review it carefully before you run it, and use the same defaults as <<sharing-sample,Sharing the sample>> when you share the reporter's layout (see <<hypothetical-cve-report,A Hypothetical CVE Report>> and <<collaboration-setup,Collaboration Setup>>).
 
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-GHSA_REMOTE_URL="git@github.com:${GHSA_NAME_WITH_OWNER}.git"
-BASE_CLONE_DIR="{base-clone-dir}"
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
 
 #########
 # Using the sample
@@ -199,6 +250,8 @@ The steps are:
 . <<producing-fix-push,Pushing the fix>>
 . <<producing-fix-notify-sample,Notifying the reporter and the `sample` branch>>
 
+Review each block before you run it, align the defaults in <<hypothetical-cve-report,A Hypothetical CVE Report>> with your environment, and complete <<collaboration-setup,Collaboration Setup>> once so the setup script exists.
+
 [[producing-fix-add-remote]]
 ==== Adding the remote and branch
 
@@ -208,14 +261,9 @@ Then, create a branch from the remote branch (e.g. {target-branch}) that contain
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-GHSA_REMOTE_URL="git@github.com:${GHSA_NAME_WITH_OWNER}.git"
-PUBLIC_NAME_WITH_OWNER='{public-name-with-owner}'
-TARGET_BRANCH='{target-branch}'
-PUBLIC_REPO_REMOTE_NAME='{public-repo-remote-name}'
-BASE_CLONE_DIR="{base-clone-dir}"
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
 # cd "{base-clone-dir}/{ghsa-remote-name}"
 cd "$BASE_CLONE_DIR"/"$GHSA_REMOTE_NAME"
 
@@ -238,6 +286,14 @@ Edit the codebase (for example the files that implement path validation), run te
 [source,shell,subs=+attributes]
 ----
 #########
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
+# cd "{base-clone-dir}/{ghsa-remote-name}"
+cd "$BASE_CLONE_DIR/$GHSA_REMOTE_NAME"
+git switch "$TARGET_BRANCH"
+
+#########
 # Applying the fix
 # Edit sources as needed, then stage and commit.
 git add -A
@@ -252,10 +308,12 @@ Push the fix by publishing `TARGET_BRANCH` to the advisory remote so the team ca
 [source,shell,subs=+attributes]
 ----
 #########
-# Setup
-GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
-GHSA_REMOTE_NAME='{ghsa-remote-name}'
-TARGET_BRANCH='{target-branch}'
+# Setup — source "$GHSA_SETUP_SCRIPT" (export set when you run README Setup).
+: "${GHSA_SETUP_SCRIPT:?Complete README Setup first.}"
+source "$GHSA_SETUP_SCRIPT" || { echo >&2 "Failed to source $GHSA_SETUP_SCRIPT"; exit 1; }
+# cd "{base-clone-dir}/{ghsa-remote-name}"
+cd "$BASE_CLONE_DIR/$GHSA_REMOTE_NAME"
+git switch "$TARGET_BRANCH"
 
 #########
 # Pushing the fix
