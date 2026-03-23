@@ -75,7 +75,7 @@ Before running the script, update it below according to <<setup-shell-variables,
 # Advisory walkthrough defaults — re-create from README Setup when attributes change.
 GHSA_NAME_WITH_OWNER='{ghsa-name-with-owner}'
 GHSA_REMOTE_NAME='{ghsa-remote-name}'
-BASE_CLONE_DIR='{base-clone-dir}'
+BASE_CLONE_DIR="{base-clone-dir}"
 ##
 # Only needed for the reporter sharing the sample
 CVE_SAMPLE_DIR='{cve-sample-dir}'
