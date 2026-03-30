@@ -1,0 +1,22 @@
+{
+  "name": "triage-ghsa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Validates that security advisory reports conform to the required template",
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.0",
+    "@octokit/rest": "^22.0.1"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

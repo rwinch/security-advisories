@@ -1,0 +1,158 @@
+= Check Advisory Reports
+
+A scheduled GitHub Actions workflow that polls all draft security advisories in this repository and verifies that each one conforms to the https://github.com/spring-projects/security-advisories?tab=readme-ov-file#creating-report[reporting requirements].
+If any advisory fails validation, the workflow fails and annotates each issue in the Actions log.
+
+[[validation-rules]]
+== Validation Rules
+
+Each draft advisory body is checked against three rules.
+
+[[validation-rules-required-sections]]
+=== Required Sections
+
+Every advisory must contain all six of the following `###` headings:
+
+* `### Summary of the CVE`
+* `### Advisory Checklist`
+* `### Instructions on running the minimal sample`
+* `### Instructions on reproducing the issue`
+* `### Describe the expected result`
+* `### Describe the actual result and explain why it is a vulnerability`
+
+[[validation-rules-checklist-items]]
+=== Checklist Items
+
+Every `* [ ]` or `- [ ]` task-list item found in the body is treated as an unchecked checklist item and reported as a failure.
+All items must be marked `[x]` before the advisory is considered ready.
+
+[[validation-rules-section-content]]
+=== Section Content
+
+The following sections must contain real prose — content that remains after HTML comments are stripped must be non-empty:
+
+* `### Summary of the CVE`
+* `### Instructions on running the minimal sample`
+* `### Instructions on reproducing the issue`
+* `### Describe the expected result`
+* `### Describe the actual result and explain why it is a vulnerability`
+
+The `### Advisory Checklist` section is exempt from this check because its value is captured by the <<validation-rules-checklist-items,checklist item rule>>.
+
+[[permissions]]
+== Required Permissions
+
+The triage workflow uses a personal access token (PAT) stored as the repository secret `GHSA_GITHUB_PAT`.
+The PAT is needed because `GITHUB_TOKEN` does not have the `repository_advisories: write` permission required to list and update draft security advisories via the GitHub REST API.
+
+Create a fine-grained PAT with the following permission on the target repository:
+
+* **Repository permissions → Security advisories → Read and write** (`repository_advisories: write`)
+
+Store it as a repository secret named `GHSA_GITHUB_PAT` under *Settings → Secrets and variables → Actions*.
+The test workflow (`test-triage-ghsa.yml`) does not use this secret — it only requires `contents: read` from `GITHUB_TOKEN`.
+
+[[usage]]
+== Usage
+
+Two workflows support this script.
+
+[[usage-triage]]
+=== Triage GHSA (`triage-ghsa.yml`)
+
+Runs the script against all draft advisories and updates their titles and descriptions.
+Triggers:
+
+* **Daily at 08:00 UTC** — the scheduled poll that catches advisories filed or edited since the last run.
+* **Manual dispatch** — trigger a run at any time from the Actions tab.
+
+[[usage-test]]
+=== Test Triage GHSA (`test-triage-ghsa.yml`)
+
+Runs the JavaScript test suite to verify the script is correct.
+Triggers:
+
+* **Pull request targeting `main`** — runs on every PR regardless of which files changed.
+* **Push to `main`** — when the workflow file or any file under `.github/scripts/triage-ghsa/` changes.
+
+The triage workflow reads `GHSA_GITHUB_PAT` from repository secrets and `GITHUB_REPOSITORY` from the standard GitHub Actions environment.
+The test workflow uses only the built-in `GITHUB_TOKEN` (read-only) and requires no additional secrets.
+
+[[usage-example]]
+=== Example Workflow Output
+
+A conforming advisory produces a single info line, and no advisory changes are written:
+
+----
+✓ GHSA-xxxx-yyyy-zzzz conforms to requirements
+----
+
+A non-conforming advisory annotates each failure as an error, then updates the advisory:
+
+----
+::error::GHSA-xxxx-yyyy-zzzz: Missing required section: "### Summary of the CVE"
+::error::GHSA-xxxx-yyyy-zzzz: Unchecked checklist item: * [ ] The expected result
+Updating advisory GHSA-xxxx-yyyy-zzzz...
+----
+
+After the run, the advisory title is prefixed with `PENDING: ` and its description gains a status block showing the failures.
+Once all issues are resolved the prefix is removed and the status block is updated to PASSING on the next run.
+Only advisories whose title or description actually changed are written back to the API.
+
+[[development]]
+== Development
+
+[[development-prerequisites]]
+=== Prerequisites
+
+* https://github.com/nvm-sh/nvm[nvm] — the correct Node.js version is declared in `.nvmrc`.
+
+[[development-running-tests]]
+=== Running Tests
+
+[source,shell]
+----
+cd .github/scripts/triage-ghsa
+nvm use
+npm ci
+npm test
+----
+
+Coverage report:
+
+[source,shell]
+----
+npm run test:coverage
+----
+
+[[development-project-structure]]
+=== Project Structure
+
+[cols="1,3"]
+|===
+| File | Purpose
+
+| `src/security-advisory-triage.js`
+| Pure validation logic; stateless functions with no I/O.
+
+| `src/advisory-status.js`
+| Builds and updates the status block embedded in the advisory description.
+
+| `src/advisories.js`
+| `Advisories` class — wraps `@octokit/rest` to list and update draft advisories.
+
+| `src/index.js`
+| Entry point — reads environment variables, orchestrates the check, updates titles and descriptions, and reports results via `@actions/core`.
+
+| `tests/security-advisory-triage.test.js`
+| Unit tests for every validation rule and helper function.
+
+| `tests/advisory-status.test.js`
+| Unit tests for status block construction and idempotency.
+
+| `tests/advisories.test.js`
+| Unit tests for `listDraftAdvisories` using `vi.mock` to stub `@octokit/rest`.
+
+| `tests/advisories-update.test.js`
+| Unit tests for `updateAdvisory` using `vi.mock` to stub `@octokit/rest`.
+|===

@@ -1,0 +1,60 @@
+name: Triage GHSA
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.github/scripts/triage-ghsa/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: .github/scripts/triage-ghsa/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/triage-ghsa
+
+      - name: Run tests
+        run: npm test
+        working-directory: .github/scripts/triage-ghsa
+
+  triage:
+    name: Triage
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+    environment: GHSA
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version-file: '.github/scripts/triage-ghsa/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: .github/scripts/triage-ghsa/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .github/scripts/triage-ghsa
+
+      - name: Triage security advisories
+        run: node src/index.js
+        working-directory: .github/scripts/triage-ghsa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHSA_GITHUB_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
