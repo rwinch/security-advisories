@@ -41,6 +41,37 @@ class Advisories {
   }
 
   /**
+   * Returns all triage-state security advisories for the repository.
+   * These are privately reported vulnerabilities that have not yet been accepted as drafts.
+   *
+   * @returns {Promise<object[]>}
+   */
+  async listTriageAdvisories() {
+    this.core.debug(`Fetching triage advisories for ${this.owner}/${this.repo}`);
+    return this.gh.paginate(this.gh.rest.securityAdvisories.listRepositoryAdvisories, {
+      owner: this.owner,
+      repo: this.repo,
+      state: 'triage',
+      per_page: 100,
+    });
+  }
+
+  /**
+   * Returns all open (triage + draft) security advisories for the repository.
+   * Published and closed advisories are excluded.
+   *
+   * @returns {Promise<object[]>}
+   */
+  async listOpenAdvisories() {
+    this.core.debug(`Fetching open advisories for ${this.owner}/${this.repo}`);
+    const [triage, draft] = await Promise.all([
+      this.listTriageAdvisories(),
+      this.listDraftAdvisories(),
+    ]);
+    return [...triage, ...draft];
+  }
+
+  /**
    * Updates fields on a security advisory.
    *
    * @param {string} ghsaId - The GHSA identifier (e.g. {@code GHSA-xxxx-yyyy-zzzz})

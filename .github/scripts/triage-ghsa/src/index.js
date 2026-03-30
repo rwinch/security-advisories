@@ -21,19 +21,19 @@ async function run({
 
   const advisories = new Advisories(token, repository, core);
   try {
-    core.info(`Checking draft security advisories for ${repository}...`);
-    const drafts = await advisories.listDraftAdvisories();
+    core.info(`Checking open security advisories for ${repository}...`);
+    const openAdvisories = await advisories.listOpenAdvisories();
 
-    if (drafts.length === 0) {
-      core.info('No draft advisories found.');
+    if (openAdvisories.length === 0) {
+      core.info('No open advisories found.');
       return;
     }
 
-    core.info(`Found ${drafts.length} draft advisory(ies).`);
+    core.info(`Found ${openAdvisories.length} open advisory(ies).`);
 
     let workflowFailed = false;
 
-    for (const advisory of drafts) {
+    for (const advisory of openAdvisories) {
       const id = advisory.ghsa_id ?? '(unknown)';
       const currentSummary = advisory.summary ?? '';
       const currentDescription = advisory.description ?? '';
