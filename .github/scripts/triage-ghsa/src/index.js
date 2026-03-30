@@ -43,9 +43,7 @@ async function run({
 
       if (hasFailed) {
         workflowFailed = true;
-        for (const issue of issues) {
-          core.error(`${id}: ${issue.message}`);
-        }
+        core.info(`✗ ${id}: ${issues.length} issue(s) found`);
       } else {
         core.info(`✓ ${id} conforms to requirements`);
       }
