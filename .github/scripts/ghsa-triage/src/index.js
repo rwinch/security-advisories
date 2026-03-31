@@ -36,11 +36,12 @@ async function run({
       const currentSummary = advisory.summary ?? '';
       const currentDescription = advisory.description ?? '';
 
-      const issues = triageSecurityAdvisory(currentDescription);
+      const readmeUrl = `https://github.com/${repository}`;
+      const issues = triageSecurityAdvisory(currentDescription, readmeUrl);
       const hasFailed = issues.length > 0;
 
       if (hasFailed) {
-        core.info(`✗ ${id}: ${issues.length} issue(s) found`);
+        core.info(`✗ ${id}: does not conform to requirements`);
       } else {
         core.info(`✓ ${id} conforms to requirements`);
       }
