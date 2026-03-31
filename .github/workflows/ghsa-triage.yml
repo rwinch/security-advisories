@@ -18,17 +18,17 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version-file: '.github/scripts/triage-ghsa/.nvmrc'
+          node-version-file: '.github/scripts/ghsa-triage/.nvmrc'
           cache: 'npm'
-          cache-dependency-path: .github/scripts/triage-ghsa/package-lock.json
+          cache-dependency-path: .github/scripts/ghsa-triage/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: .github/scripts/triage-ghsa
+        working-directory: .github/scripts/ghsa-triage
 
       - name: Run tests
         run: npm test
-        working-directory: .github/scripts/triage-ghsa
+        working-directory: .github/scripts/ghsa-triage
 
   triage:
     name: Triage
@@ -44,17 +44,17 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version-file: '.github/scripts/triage-ghsa/.nvmrc'
+          node-version-file: '.github/scripts/ghsa-triage/.nvmrc'
           cache: 'npm'
-          cache-dependency-path: .github/scripts/triage-ghsa/package-lock.json
+          cache-dependency-path: .github/scripts/ghsa-triage/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: .github/scripts/triage-ghsa
+        working-directory: .github/scripts/ghsa-triage
 
       - name: Triage security advisories
         run: node src/index.js
-        working-directory: .github/scripts/triage-ghsa
+        working-directory: .github/scripts/ghsa-triage
         env:
           GITHUB_TOKEN: ${{ secrets.GHSA_GITHUB_PAT }}
           GITHUB_REPOSITORY: ${{ github.repository }}
