@@ -31,8 +31,6 @@ async function run({
 
     core.info(`Found ${openAdvisories.length} open advisory(ies).`);
 
-    let workflowFailed = false;
-
     for (const advisory of openAdvisories) {
       const id = advisory.ghsa_id ?? '(unknown)';
       const currentSummary = advisory.summary ?? '';
@@ -42,7 +40,6 @@ async function run({
       const hasFailed = issues.length > 0;
 
       if (hasFailed) {
-        workflowFailed = true;
         core.info(`✗ ${id}: ${issues.length} issue(s) found`);
       } else {
         core.info(`✓ ${id} conforms to requirements`);
@@ -68,10 +65,6 @@ async function run({
           ...(descriptionChanged && { description: newDescription }),
         });
       }
-    }
-
-    if (workflowFailed) {
-      core.setFailed('One or more advisories do not conform to the reporting requirements.');
     }
   } catch (error) {
     core.setFailed(error.message);
