@@ -11,7 +11,7 @@ function buildStatusBlock(issues) {
   const lines = [STATUS_START, '', '---', ''];
 
   if (issues.length === 0) {
-    lines.push('**Advisory Check Status: ✅ PASSING** — All checks passed.');
+    lines.push('**Advisory Check Status: ✅ PASSING** — Thank you for responsibly reporting your concern. The report is now ready for triage.');
   } else {
     lines.push(`**Advisory Check Status: ⚠️ FAILING** — ${issues.length} issue(s) found:`, '');
     for (const { message } of issues) {
